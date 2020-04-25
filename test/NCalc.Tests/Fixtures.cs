@@ -117,6 +117,22 @@ namespace NCalc.Tests
         }
 
         [Fact]
+        public void ExpressionShouldHandleALotOfNullParameters()
+        {
+            var e1 = new Expression("(a > null) || (a < 11) || (null == null)", EvaluateOptions.AllowNullParameter);
+            var e2 = new Expression("(a > 11) || (a < null)", EvaluateOptions.AllowNullParameter);
+            var e3 = new Expression("(a == null) || (a < 11)", EvaluateOptions.AllowNullParameter);
+
+            e1.Parameters["a"] = 10;
+            e2.Parameters["a"] = 10;
+            e3.Parameters["a"] = null;
+
+            Assert.True((bool)e1.Evaluate());
+            Assert.False((bool)e2.Evaluate());
+            Assert.True((bool)e3.Evaluate());
+        }
+
+        [Fact]
         public void ShouldParseValues()
         {
             Assert.Equal(123456, new Expression("123456").Evaluate());
