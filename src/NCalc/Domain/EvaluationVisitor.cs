@@ -56,26 +56,16 @@ namespace NCalc.Domain
             return a ?? b;
         }
 
-        public bool CanCompare(object a, object b)
-        {
-            var allowNull = (_options & EvaluateOptions.AllowNullParameter) == EvaluateOptions.AllowNullParameter;
-
-            if (!allowNull)
-                return true;
-
-            return a == b || a != null && b != null;
-        }
-
-        public int CompareUsingMostPreciseType(object a, object b)
+        public int? CompareUsingMostPreciseType(object a, object b)
         {
             var allowNull = (_options & EvaluateOptions.AllowNullParameter) == EvaluateOptions.AllowNullParameter;
 
             if (allowNull && a == null && b == null)
                 return 0;
             if (allowNull && a != null && b == null)
-                return 1;
+                return null;
             if (allowNull && a == null && b != null)
-                return -1;
+                return null;
 
             Type mpt = allowNull ? GetMostPreciseType(a?.GetType(), b?.GetType()) ?? typeof(object) : GetMostPreciseType(a.GetType(), b.GetType());
 
@@ -153,6 +143,8 @@ namespace NCalc.Domain
                 return rightValue;
             };
 
+            Func<object, object, bool> hasNull = (l, r) => l == null || r == null;
+
             switch (expression.Type)
             {
                 case BinaryExpressionType.And:
@@ -174,27 +166,27 @@ namespace NCalc.Domain
 
                 case BinaryExpressionType.Equal:
                     // Use the type of the left operand to make the comparison
-                    Result = CanCompare(left(), right()) && CompareUsingMostPreciseType(left(), right()) == 0;
+                    Result = CompareUsingMostPreciseType(left(), right()) == 0;
                     break;
 
                 case BinaryExpressionType.Greater:
                     // Use the type of the left operand to make the comparison
-                    Result = CanCompare(left(), right()) && CompareUsingMostPreciseType(left(), right()) > 0;
+                    Result = CompareUsingMostPreciseType(left(), right()) > 0;
                     break;
 
                 case BinaryExpressionType.GreaterOrEqual:
                     // Use the type of the left operand to make the comparison
-                    Result = CanCompare(left(), right()) && CompareUsingMostPreciseType(left(), right()) >= 0;
+                    Result = CompareUsingMostPreciseType(left(), right()) >= 0 && !hasNull(left(), right());
                     break;
 
                 case BinaryExpressionType.Lesser:
                     // Use the type of the left operand to make the comparison
-                    Result = CanCompare(left(), right()) && CompareUsingMostPreciseType(left(), right()) < 0;
+                    Result = CompareUsingMostPreciseType(left(), right()) < 0;
                     break;
 
                 case BinaryExpressionType.LesserOrEqual:
                     // Use the type of the left operand to make the comparison
-                    Result = CanCompare(left(), right()) && CompareUsingMostPreciseType(left(), right()) <= 0;
+                    Result = CompareUsingMostPreciseType(left(), right()) <= 0 && !hasNull(left(), right());
                     break;
 
                 case BinaryExpressionType.Minus:
@@ -210,7 +202,7 @@ namespace NCalc.Domain
 
                 case BinaryExpressionType.NotEqual:
                     // Use the type of the left operand to make the comparison
-                    Result = !CanCompare(left(), right()) || CompareUsingMostPreciseType(left(), right()) != 0;
+                    Result = CompareUsingMostPreciseType(left(), right()) != 0;
                     break;
 
                 case BinaryExpressionType.Plus:
